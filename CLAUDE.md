@@ -2,7 +2,7 @@
 
 ## プロジェクト概要
 
-国土数値情報（KSJ）の駅別乗降客数データ（S12-25）に、国交省のホームドア設置状況Excelを突合し、ポイントGeoJSON・PMTiles・QMLおよびMapLibre Webマップを生成するプロジェクト。
+国土数値情報の駅別乗降客数データ（S12-25）に、国交省のホームドア設置状況Excelを突合し、ポイントGeoJSON・PMTiles・QMLおよびMapLibre Webマップを生成するプロジェクト。
 
 ---
 
@@ -14,7 +14,7 @@
 │   └── convert_to_points_with_homedoor.py   # メイン処理スクリプト
 ├── data/
 │   ├── 001472240.xlsx                        # 入力: ホームドア設置状況（令和6年度末）
-│   └── S12-25_GML/                           # 入力: KSJ元データ（.gitignore済、約200MB）
+│   └── S12-25_GML/                           # 入力: 国土数値情報元データ（.gitignore済、約200MB）
 │       └── UTF-8/
 │           └── S12-25_NumberOfPassengers.geojson
 ├── output/
@@ -61,7 +61,7 @@ output/S12-25_NumberOfPassengers_points.pmtiles
 
 `事業者名（正規化） × 駅名（正規化）` でExcelとGeoJSONを突合。マッチング結果は未マッチ0件。
 
-**判定の粒度:** Excelは番線（ホーム）単位のデータだが、KSJ GeoJSONは番線情報を持たないため突合は駅単位。`platform_door=1` = 「その駅の少なくとも1番線に設置あり」であり、全番線設置済みかは不明。
+**判定の粒度:** Excelは番線（ホーム）単位のデータだが、国土数値情報 GeoJSONは番線情報を持たないため突合は駅単位。`platform_door=1` = 「その駅の少なくとも1番線に設置あり」であり、全番線設置済みかは不明。
 
 **正規化の内容（`normalize_station()`）:**
 - NFKC正規化（半角カタカナ→全角、全角英数→半角）
