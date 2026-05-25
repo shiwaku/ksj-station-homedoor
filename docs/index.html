@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>駅別乗降客数 × ホームドア設置状況</title>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
+  <script src="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/pmtiles@3/dist/pmtiles.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", sans-serif; background: #f5f5f0; color: #1a1a1a; }
+
+    #map { width: 100vw; height: 100dvh; }
+
+    /* ── ヘッダー ── */
+    #header {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 10;
+      background: linear-gradient(to bottom, rgba(245,245,240,0.95), rgba(245,245,240,0));
+      padding: 14px 20px 32px;
+      pointer-events: none;
+    }
+    #header h1 { font-size: 1.2rem; font-weight: 700; letter-spacing: 0.03em; color: #000; }
+    #header p  { font-size: 0.78rem; color: #333; margin-top: 2px; }
+
+    /* ── 凡例 ── */
+    #legend {
+      position: absolute; bottom: 46px; left: 14px; z-index: 20;
+      background: rgba(255,255,252,0.94);
+      border: 1px solid rgba(0,0,0,0.08);
+      border-radius: 10px; padding: 12px 16px;
+      backdrop-filter: blur(6px);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+      min-width: 200px;
+    }
+    #legend-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    #legend h3 { font-size: 0.78rem; color: #666; font-weight: 500; }
+    #legend-close {
+      display: none;
+      background: none; border: none; cursor: pointer;
+      font-size: 0.9rem; color: #999; padding: 0 0 0 8px; line-height: 1;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; margin: 5px 0; font-size: 0.82rem; color: #333; }
+    .legend-circle {
+      border-radius: 50%; flex-shrink: 0;
+      border: 1px solid rgba(0,0,0,0.15);
+    }
+    .legend-divider { border: none; border-top: 1px solid rgba(0,0,0,0.08); margin: 8px 0; }
+    .legend-size-row { display: flex; align-items: flex-end; gap: 10px; margin: 6px 0 4px; }
+    .legend-size-item { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.72rem; color: #777; }
+    .legend-size-circle { border-radius: 50%; background: #94a3b8; border: 1px solid rgba(0,0,0,0.1); }
+
+    /* ── 凡例トグル（スマホのみ） ── */
+    #legend-toggle { display: none; }
+
+    /* ── ローディング ── */
+    #loading {
+      position: absolute; inset: 0; z-index: 50;
+      background: #f5f5f0;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 12px;
+    }
+    #loading p { font-size: 0.9rem; color: #888; }
+    .spinner { width: 36px; height: 36px; border: 3px solid rgba(0,0,0,0.1);
+               border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MapLibre コントロール位置調整 ── */
+    .maplibregl-ctrl-top-left { top: 66px !important; }
+
+    /* ── ポップアップ ── */
+    .maplibregl-popup-content { padding: 12px 14px; border-radius: 8px; font-size: 0.82rem; line-height: 1.7; min-width: 190px; }
+
+    /* ── スマホ対応 ── */
+    @media (max-width: 600px) {
+      #header { padding: max(10px, env(safe-area-inset-top)) 12px 24px; }
+      #header h1 { font-size: 1rem; }
+      .maplibregl-ctrl-top-left { display: none !important; }
+
+      #legend {
+        display: none;
+        top: max(54px, calc(env(safe-area-inset-top) + 44px));
+        right: 14px; left: auto; bottom: auto; padding: 10px 14px;
+      }
+      #legend.open { display: block; z-index: 30; }
+      #legend-close { display: block; }
+
+      #legend-toggle {
+        display: flex; align-items: center;
+        position: absolute;
+        top: max(12px, env(safe-area-inset-top));
+        right: 14px; z-index: 20;
+        background: rgba(255,255,252,0.94);
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 0.82rem; font-weight: 600; color: #333;
+        cursor: pointer; backdrop-filter: blur(6px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+    }
+
+    /* ── 横向き対応 ── */
+    @media (max-width: 900px) and (orientation: landscape) {
+      #header { display: none; }
+      .maplibregl-ctrl-top-left { top: 10px !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <p>データを読み込んでいます…</p>
+</div>
+
+<div id="map"></div>
+
+<div id="header">
+  <h1>駅別乗降客数 × ホームドア設置状況</h1>
+  <p>国土数値情報 S12-25（2025年）× 国交省ホームドア設置状況（令和6年度）</p>
+</div>
+
+<div id="legend">
+  <div id="legend-header">
+    <h3>凡例</h3>
+    <button id="legend-close" aria-label="閉じる">✕</button>
+  </div>
+  <div class="legend-item">
+    <div class="legend-circle" style="width:14px;height:14px;background:#3b82f6;"></div>
+    ホームドアあり
+  </div>
+  <div class="legend-item">
+    <div class="legend-circle" style="width:14px;height:14px;background:#f87171;"></div>
+    ホームドアなし
+  </div>
+  <hr class="legend-divider">
+  <div style="font-size:0.75rem;color:#888;margin-bottom:4px;">円の大きさ = 乗降客数（人/日）</div>
+  <div class="legend-size-row">
+    <div class="legend-size-item">
+      <div class="legend-size-circle" style="width:6px;height:6px;"></div>
+      <span>1千</span>
+    </div>
+    <div class="legend-size-item">
+      <div class="legend-size-circle" style="width:10px;height:10px;"></div>
+      <span>1万</span>
+    </div>
+    <div class="legend-size-item">
+      <div class="legend-size-circle" style="width:16px;height:16px;"></div>
+      <span>10万</span>
+    </div>
+    <div class="legend-size-item">
+      <div class="legend-size-circle" style="width:22px;height:22px;"></div>
+      <span>100万</span>
+    </div>
+  </div>
+</div>
+<button id="legend-toggle">凡例</button>
+
+<script>
+const protocol = new pmtiles.Protocol();
+maplibregl.addProtocol("pmtiles", protocol.tile);
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: "./pale.json",
+  center: [136.5, 36.5],
+  zoom: 5,
+  maxZoom: 18,
+  hash: true,
+});
+
+map.addControl(new maplibregl.NavigationControl(), "top-left");
+map.addControl(new maplibregl.GeolocateControl({
+  positionOptions: { enableHighAccuracy: true },
+  trackUserLocation: false,
+  showAccuracyCircle: false,
+}), "top-left");
+map.addControl(new maplibregl.ScaleControl({ maxWidth: 120, unit: "metric" }), "bottom-left");
+
+// 乗降客数(S12_061)の平方根に比例した半径をズームごとに定義
+// 式を直接展開することで ["*", interpolate, scalar] の評価エラーを回避する
+const sqrtExpr = ["^", ["coalesce", ["get", "S12_061"], 1], 0.5];
+const circleRadiusExpr = [
+  "interpolate", ["linear"], ["zoom"],
+  4,  ["interpolate", ["linear"], sqrtExpr, 0, 0.4, 32, 1.2, 100, 2.4, 316,  4.0, 1330,  7.2],
+  8,  ["interpolate", ["linear"], sqrtExpr, 0, 0.8, 32, 2.4, 100, 4.8, 316,  8.0, 1330, 14.4],
+  10, ["interpolate", ["linear"], sqrtExpr, 0, 1.2, 32, 3.6, 100, 7.2, 316, 12.0, 1330, 21.6],
+  14, ["interpolate", ["linear"], sqrtExpr, 0, 2.0, 32, 6.0, 100,12.0, 316, 20.0, 1330, 36.0]
+];
+
+const circleColor = [
+  "case",
+  ["==", ["get", "platform_door"], 1], "#3b82f6",
+  "#f87171"
+];
+
+map.on("load", async () => {
+  // GeoJSON 読み込み
+  const res = await fetch("./S12-25_NumberOfPassengers_points.geojson");
+  const data = await res.json();
+
+  document.getElementById("loading").style.display = "none";
+
+  map.addSource("stations", {
+    type: "geojson",
+    data,
+  });
+
+  // 1レイヤーで描画（circle-stroke で白枠を表現）
+  map.addLayer({
+    id: "stations-fill",
+    type: "circle",
+    source: "stations",
+    paint: {
+      "circle-radius": circleRadiusExpr,
+      "circle-color": circleColor,
+      "circle-opacity": 0.85,
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 1,
+      "circle-stroke-opacity": 0.7,
+    }
+  });
+
+  // ラベル（ズーム10以上）
+  map.addLayer({
+    id: "stations-label",
+    type: "symbol",
+    source: "stations",
+    minzoom: 10,
+    filter: [">=", ["coalesce", ["get", "S12_061"], 0], 100000],
+    layout: {
+      "text-field": ["concat",
+        ["get", "S12_001"], "\n",
+        ["number-format", ["coalesce", ["get", "S12_061"], 0],
+          { "locale": "ja-JP", "min-fraction-digits": 0, "max-fraction-digits": 0 }
+        ], "人"
+      ],
+      "text-size": 11,
+      "text-font": ["NotoSansCJKjp-Regular"],
+      "text-anchor": "top",
+      "text-offset": [0, 0.8],
+      "text-allow-overlap": false,
+      "text-ignore-placement": false,
+    },
+    paint: {
+      "text-color": "#1a1a1a",
+      "text-halo-color": "rgba(255,255,255,0.9)",
+      "text-halo-width": 1.5,
+    }
+  });
+
+  // ── ポップアップ ──
+  const popup = new maplibregl.Popup({ closeButton: true, closeOnClick: false, offset: 12 });
+  let pinned = false;
+  popup.on("close", () => { pinned = false; });
+
+  function makePopupHTML(p) {
+    const hasDoor = p.platform_door === 1;
+    const doorLabel = hasDoor
+      ? '<span style="color:#2563eb;font-weight:700;">✔ ホームドアあり</span>'
+      : '<span style="color:#dc2626;font-weight:700;">✘ ホームドアなし</span>';
+    const passengers = p.S12_061 != null
+      ? Number(p.S12_061).toLocaleString("ja-JP") + " 人/日"
+      : "データなし";
+    return `
+      <div style="line-height:1.7;">
+        <div style="font-size:1rem;font-weight:700;margin-bottom:4px;">${p.S12_001}</div>
+        <div style="font-size:0.8rem;color:#555;margin-bottom:6px;">${p.S12_002}｜${p.S12_003}</div>
+        <div style="font-size:0.82rem;">${doorLabel}</div>
+        <div style="font-size:0.82rem;margin-top:2px;">乗降客数：<b>${passengers}</b></div>
+      </div>`;
+  }
+
+  map.on("click", (e) => {
+    if (!map.queryRenderedFeatures(e.point, { layers: ["stations-fill"] }).length) {
+      popup.remove();
+    }
+  });
+
+  map.on("mousemove", "stations-fill", (e) => {
+    map.getCanvas().style.cursor = "pointer";
+    if (!pinned) popup.setLngLat(e.lngLat).setHTML(makePopupHTML(e.features[0].properties)).addTo(map);
+  });
+  map.on("mouseleave", "stations-fill", () => {
+    map.getCanvas().style.cursor = "";
+    if (!pinned) popup.remove();
+  });
+  map.on("click", "stations-fill", (e) => {
+    pinned = true;
+    popup.setLngLat(e.lngLat).setHTML(makePopupHTML(e.features[0].properties)).addTo(map);
+    e.stopPropagation();
+  });
+});
+
+// ── 凡例トグル（スマホ） ──
+const legendPanel  = document.getElementById("legend");
+const legendToggle = document.getElementById("legend-toggle");
+const legendClose  = document.getElementById("legend-close");
+
+legendToggle.addEventListener("click", () => {
+  const isOpen = legendPanel.classList.toggle("open");
+  legendToggle.textContent = isOpen ? "✕ 閉じる" : "凡例";
+});
+legendClose.addEventListener("click", () => {
+  legendPanel.classList.remove("open");
+  legendToggle.textContent = "凡例";
+});
+</script>
+</body>
+</html>
