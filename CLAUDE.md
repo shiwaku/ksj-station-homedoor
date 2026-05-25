@@ -61,6 +61,8 @@ output/S12-25_NumberOfPassengers_points.pmtiles
 
 `事業者名（正規化） × 駅名（正規化）` でExcelとGeoJSONを突合。マッチング結果は未マッチ0件。
 
+**判定の粒度:** Excelは番線（ホーム）単位のデータだが、KSJ GeoJSONは番線情報を持たないため突合は駅単位。`platform_door=1` = 「その駅の少なくとも1番線に設置あり」であり、全番線設置済みかは不明。
+
 **正規化の内容（`normalize_station()`）:**
 - NFKC正規化（半角カタカナ→全角、全角英数→半角）
 - 漢字間の「ケ」→「ヶ」
