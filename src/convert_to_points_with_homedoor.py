@@ -96,6 +96,11 @@ for feat in gj["features"]:
     operator = (props.get("S12_002") or "").strip()
     station_norm = normalize_station(props.get("S12_001") or "")
     has_door = 1 if (operator, station_norm) in homedoor_stations else 0
+    # 東京地下鉄は全駅設置済み（Excel欠落補完）
+    # 出典: 東京メトロ公式サイト（南砂町1番線を除き全番線整備済み）
+    # 駅単位の判定では南砂町も「設置あり」扱い
+    if operator == "東京地下鉄" and has_door == 0:
+        has_door = 1
 
     if has_door:
         matched += 1
