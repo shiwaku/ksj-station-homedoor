@@ -34,9 +34,11 @@
 ```
 data/001472240.xlsx  +  data/S12-25_GML/UTF-8/S12-25_NumberOfPassengers.geojson
         ↓  src/convert_to_points_with_homedoor.py
-output/S12-25_NumberOfPassengers_points.geojson  （+ docs/ に自動同期）
+output/S12-25_NumberOfPassengers_points.geojson
         ↓  tippecanoe
 output/S12-25_NumberOfPassengers_points.pmtiles
+        ↓  手動コピー
+docs/S12-25_NumberOfPassengers_points.pmtiles
 ```
 
 スクリプトは `pathlib` で `__file__` からルートを特定するため、**どのディレクトリから実行しても動作する**。
@@ -130,8 +132,7 @@ tippecanoe \
   -o output/S12-25_NumberOfPassengers_points.pmtiles \
   --name="station-homedoor" --layer="stations" \
   --minimum-zoom=4 --maximum-zoom=14 \
-  --drop-densest-as-needed --extend-zooms-if-still-dropping \
-  --force \
+  -r1 --force \
   output/S12-25_NumberOfPassengers_points.geojson
 
 # ローカルサーバー起動
@@ -142,6 +143,6 @@ python -m http.server 8080 --directory docs
 
 ## 注意事項
 
-- `docs/S12-25_NumberOfPassengers_points.geojson` は `output/` のコピー。スクリプト実行で自動同期されるため手動コピー不要。
+- `docs/S12-25_NumberOfPassengers_points.pmtiles` は `output/` のコピー。tippecanoe 実行後に手動で `cp output/...pmtiles docs/` すること。
 - `data/S12-25_GML/` は約200MBのため `.gitignore` 済み。再利用時は国土数値情報からダウンロードして配置すること。
 - `docs/pale.json` は国土地理院最適化ベクトルタイルの淡色スタイル定義。

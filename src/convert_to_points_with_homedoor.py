@@ -8,7 +8,6 @@ ROOT = Path(__file__).parent.parent
 EXCEL_PATH        = ROOT / "data" / "001472240.xlsx"
 INPUT_GEOJSON     = ROOT / "data" / "S12-25_GML" / "UTF-8" / "S12-25_NumberOfPassengers.geojson"
 OUTPUT_GEOJSON    = ROOT / "output" / "S12-25_NumberOfPassengers_points.geojson"
-OUTPUT_DOCS       = ROOT / "docs"   / "S12-25_NumberOfPassengers_points.geojson"
 
 # Excel事業者名 → GeoJSON事業者名 のマッピング
 OPERATOR_MAP = {
@@ -134,8 +133,4 @@ OUTPUT_GEOJSON.parent.mkdir(parents=True, exist_ok=True)
 with open(OUTPUT_GEOJSON, "w", encoding="utf-8") as f:
     json.dump({"type": "FeatureCollection", "features": new_features}, f, ensure_ascii=False)
 print(f"\n出力完了: {OUTPUT_GEOJSON}")
-
-# docs/ にも同期コピー
-with open(OUTPUT_DOCS, "w", encoding="utf-8") as f:
-    json.dump({"type": "FeatureCollection", "features": new_features}, f, ensure_ascii=False)
-print(f"docs/ に同期: {OUTPUT_DOCS}")
+print("次のステップ: tippecanoe で PMTiles を再生成し docs/ に配置してください。")

@@ -25,7 +25,7 @@
 └── docs/                                     # GitHub Pages
     ├── index.html                            # MapLibre Webマップ
     ├── pale.json                             # ベースマップスタイル
-    └── S12-25_NumberOfPassengers_points.geojson  # スクリプトが自動同期
+    └── S12-25_NumberOfPassengers_points.pmtiles  # output/ から手動コピー
 ```
 
 > `data/S12-25_GML/`（約200MB）は `.gitignore` で除外しています。
@@ -111,7 +111,7 @@
 | ファイル | サイズ |
 |----------|--------|
 | GeoJSON | 12 MB |
-| PMTiles（zoom 4〜14） | 7.1 MB |
+| PMTiles（zoom 4〜14） | 15 MB |
 
 ---
 
@@ -124,7 +124,7 @@ pip install openpyxl
 python src/convert_to_points_with_homedoor.py
 ```
 
-`output/` への書き出しと `docs/` への同期を自動で行います。
+`output/` に GeoJSON を出力します。その後 tippecanoe で PMTiles を生成し `docs/` にコピーしてください。
 
 ### PMTiles生成
 
@@ -133,8 +133,7 @@ tippecanoe \
   -o output/S12-25_NumberOfPassengers_points.pmtiles \
   --name="station-homedoor" --layer="stations" \
   --minimum-zoom=4 --maximum-zoom=14 \
-  --drop-densest-as-needed --extend-zooms-if-still-dropping \
-  --force \
+  -r1 --force \
   output/S12-25_NumberOfPassengers_points.geojson
 ```
 

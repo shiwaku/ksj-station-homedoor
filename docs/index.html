@@ -195,16 +195,12 @@ const circleColor = [
   "#f87171"
 ];
 
-map.on("load", async () => {
-  // GeoJSON 読み込み
-  const res = await fetch("./S12-25_NumberOfPassengers_points.geojson");
-  const data = await res.json();
-
+map.on("load", () => {
   document.getElementById("loading").style.display = "none";
 
   map.addSource("stations", {
-    type: "geojson",
-    data,
+    type: "vector",
+    url: "pmtiles://./S12-25_NumberOfPassengers_points.pmtiles",
   });
 
   // 1レイヤーで描画（circle-stroke で白枠を表現）
@@ -212,6 +208,7 @@ map.on("load", async () => {
     id: "stations-fill",
     type: "circle",
     source: "stations",
+    "source-layer": "stations",
     paint: {
       "circle-radius": circleRadiusExpr,
       "circle-color": circleColor,
@@ -227,6 +224,7 @@ map.on("load", async () => {
     id: "stations-label",
     type: "symbol",
     source: "stations",
+    "source-layer": "stations",
     minzoom: 10,
     filter: [">=", ["coalesce", ["get", "S12_061"], 0], 100000],
     layout: {
