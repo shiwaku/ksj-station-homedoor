@@ -148,6 +148,14 @@ python -m http.server 8080 --directory docs
 
 ---
 
+## 更新履歴
+
+| 日付 | 内容 |
+|------|------|
+| 2026-05-26 | 東京地下鉄の15駅（東西線千葉延伸部・他社乗り入れターミナル等）がExcelデータに欠落していたため `platform_door=0` と誤判定されていた問題を修正。東京メトロ公式情報（南砂町1番線を除き全番線整備済み）に基づき、東京地下鉄でExcel未マッチの駅を `platform_door=1` にオーバーライドする補完処理を追加。 |
+
+---
+
 ## QGISスタイル（`output/S12-25_NumberOfPassengers_points.qml`）
 
 - **色分け**: `platform_door`（青=ホームドアあり、赤=なし）
