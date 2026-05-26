@@ -152,6 +152,8 @@ python -m http.server 8080 --directory docs
 | 日付 | 内容 |
 |------|------|
 | 2026-05-26 | 東京地下鉄の15駅（東西線千葉延伸部・他社乗り入れターミナル等）がExcelデータに欠落していたため `platform_door=0` と誤判定されていた問題を修正。東京メトロ公式情報（南砂町1番線を除き全番線整備済み）に基づき、東京地下鉄でExcel未マッチの駅を `platform_door=1` にオーバーライドする補完処理を追加。 |
+| 2026-05-26 | WebマップのデータソースをGeoJSON直読みからPMTilesに変更。tippecanoeオプションを `-r1`（間引きなし）に変更し全駅を常時表示。`docs/` からGeoJSONを削除しPMTilesを配置。 |
+| 2026-05-26 | ラベルレイヤーのフォント指定を `NotoSansCJKjp-Regular` → `NotoSansJP-Regular` に修正（zoom 10以上で円が消える問題の解消）。 |
 
 ---
 
